@@ -1,0 +1,4 @@
+---
+wp_db_host: '172.17.177.42'
+wp_installation_dir: '/var/www/wordpress'
+

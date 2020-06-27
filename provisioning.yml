@@ -20,7 +20,7 @@
 
     - name: Create database
       mysql_db:
-        name: wordpress_db
+        name: "{{ wp_db_name }}"
         login_user: root
         state: present
       become: yes
@@ -28,15 +28,15 @@
     - name: Create db user
       mysql_user:
         login_user: root
-        name: wordpress_user
-        password: wordpress_user@password
-        priv: 'wordpress_db.*:ALL'
+        name: "{{ wp_db_username }}"
+        password: "{{ wp_db_password }}"
+        priv: '{{ wp_db_name }}.*:ALL'
         state: present
         host: "{{ item }}"
       with_items:
         - localhost
         - 127.0.0.1
-        - 172.17.177.40
+        - "{{ wp_host_ip }}"
       become: yes
     - name: Update mysql bind-address
       copy:
@@ -83,20 +83,20 @@
       become: yes
     - name: Add wp-config.php
       copy:
-        src: /var/www/wordpress/wp-config-sample.php
-        dest: /var/www/wordpress/wp-config.php
+        src: "{{ wp_installation_dir }}/wp-config-sample.php"
+        dest: "{{ wp_installation_dir }}/wp-config.php"
         remote_src: yes
       become: yes
     - name: Edit wp-config
       replace:
-        path: '/var/www/wordpress/wp-config.php'
+        path: "{{ wp_installation_dir }}/wp-config.php"
         regexp: "{{ item.regex }}"
         replace: "{{ item.value }}"
       with_items:
-        - { regex: 'username_here', value: 'wordpress_user' }
-        - { regex: 'database_name_here', value: 'wordpress_db' }
-        - { regex: 'password_here', value: 'wordpress_user@password' }
-        - { regex: 'localhost', value: '172.17.177.42' }
+        - { regex: 'username_here', value: "{{ wp_db_username }}" }
+        - { regex: 'database_name_here', value: "{{ wp_db_name }}" }
+        - { regex: 'password_here', value: "{{ wp_db_password }}" }
+        - { regex: 'localhost', value: "{{ wp_db_host }}" }
       become: yes
     - name: Add wordpress to apache site-available
       copy:
