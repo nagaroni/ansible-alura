@@ -1,5 +1,53 @@
 ---
-- hosts: all
+- hosts: database
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  handlers:
+    - name: restart mysql
+      service:
+        name: mysql
+        state: restarted
+      become: yes
+
+  tasks:
+    - name: Install db dependencies
+      apt:
+        name:
+          - mysql-server-5.7
+          - python3-mysqldb
+        state: present
+      become: yes
+
+    - name: Create database
+      mysql_db:
+        name: wordpress_db
+        login_user: root
+        state: present
+      become: yes
+
+    - name: Create db user
+      mysql_user:
+        login_user: root
+        name: wordpress_user
+        password: wordpress_user@password
+        priv: 'wordpress_db.*:ALL'
+        state: present
+        host: "{{ item }}"
+      with_items:
+        - localhost
+        - 127.0.0.1
+        - 172.17.177.40
+      become: yes
+    - name: Update mysql bind-address
+      copy:
+        src: files/my.cnf
+        dest: /etc/mysql/my.cnf
+      become: yes
+      notify:
+        - restart mysql
+
+
+- hosts: wordpress
   vars:
     ansible_python_interpreter: /usr/bin/python3
   handlers:
@@ -18,25 +66,10 @@
           - php7.2-gd
           - php-ssh2
           - libmcrypt4
-          - mysql-server-5.7
           - python3-mysqldb
           - php7.2-mysql
         state: latest
         update_cache: yes
-      become: yes
-    - name: Create database
-      mysql_db:
-        name: wordpress_db
-        login_user: root
-        state: present
-      become: yes
-    - name: Create db user
-      mysql_user:
-        login_user: root
-        name: wordpress_user
-        password: wordpress_user@password
-        priv: 'wordpress_db.*:ALL'
-        state: present
       become: yes
     - name: Download latest wordpress
       get_url:
@@ -63,6 +96,7 @@
         - { regex: 'username_here', value: 'wordpress_user' }
         - { regex: 'database_name_here', value: 'wordpress_db' }
         - { regex: 'password_here', value: 'wordpress_user@password' }
+        - { regex: 'localhost', value: '172.17.177.42' }
       become: yes
     - name: Add wordpress to apache site-available
       copy:
