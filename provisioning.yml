@@ -1,25 +1,35 @@
 ---
 - hosts: all
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  handlers:
+    - name: restart apache
+      service:
+        name: apache2
+        state: restarted
+      become: yes
   tasks:
     - name: Install so deps
       apt:
         name:
-          - php5
+          - php7.2
           - apache2
-          - libapache2-mod-php5
-          - php5-gd
-          - libssh2-php
-          - php5-mcrypt
-          - mysql-server-5.6
-          - python-mysqldb
-          - php5-mysql
+          - libapache2-mod-php7.2
+          - php7.2-gd
+          - php-ssh2
+          - libmcrypt4
+          - mysql-server-5.7
+          - python3-mysqldb
+          - php7.2-mysql
         state: latest
+        update_cache: yes
       become: yes
     - name: Create database
       mysql_db:
         name: wordpress_db
         login_user: root
         state: present
+      become: yes
     - name: Create db user
       mysql_user:
         login_user: root
@@ -27,10 +37,11 @@
         password: wordpress_user@password
         priv: 'wordpress_db.*:ALL'
         state: present
+      become: yes
     - name: Download latest wordpress
       get_url:
         url: 'https://wordpress.org/latest.tar.gz'
-        dest: '/tmp/wordpress1.tar.gz'
+        dest: '/tmp/wordpress.tar.gz'
     - name: Decompress wordpress into /var/www
       unarchive:
         remote_src: yes
@@ -43,7 +54,6 @@
         dest: /var/www/wordpress/wp-config.php
         remote_src: yes
       become: yes
-
     - name: Edit wp-config
       replace:
         path: '/var/www/wordpress/wp-config.php'
@@ -54,3 +64,10 @@
         - { regex: 'database_name_here', value: 'wordpress_db' }
         - { regex: 'password_here', value: 'wordpress_user@password' }
       become: yes
+    - name: Add wordpress to apache site-available
+      copy:
+        src: 'files/000-default.conf'
+        dest: /etc/apache2/sites-available/000-default.conf
+      become: yes
+      notify:
+        - restart apache
