@@ -98,9 +98,9 @@
         - { regex: 'password_here', value: "{{ wp_db_password }}" }
         - { regex: 'localhost', value: "{{ wp_db_host }}" }
       become: yes
-    - name: Add wordpress to apache site-available
-      copy:
-        src: 'files/000-default.conf'
+    - name: Configure apache to serve wordpress
+      template:
+        src: 'templates/000-default.conf.j2'
         dest: /etc/apache2/sites-available/000-default.conf
       become: yes
       notify:
