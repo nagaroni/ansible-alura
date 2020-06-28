@@ -1,0 +1,15 @@
+---
+- name: Install php and apache
+  apt:
+    name:
+      - php7.2
+      - apache2
+      - libapache2-mod-php7.2
+      - php7.2-gd
+      - php-ssh2
+      - libmcrypt4
+      - python3-mysqldb
+      - php7.2-mysql
+    state: latest
+    update_cache: yes
+  become: yes
